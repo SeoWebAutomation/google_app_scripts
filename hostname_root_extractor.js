@@ -163,6 +163,10 @@ function parsePSL(pslRaw) {
 
 function getRootDomainFromURL(url, pslList) {
   try {
+    if (!/^https?:\/\//i.test(url)) {
+      url = 'http://' + url;
+    }
+
     const hostnameMatch = url.match(/^https?:\/\/([^\/?#]+)(?:[\/?#]|$)/i);
     if (!hostnameMatch) return 'Invalid URL';
 
@@ -176,7 +180,7 @@ function getRootDomainFromURL(url, pslList) {
         return parts.slice(i - 1).join('.');
       }
     }
-    if(parts.length >= 2) return parts.slice(-2).join('.');
+    if (parts.length >= 2) return parts.slice(-2).join('.');
     return hostname;
   } catch (e) {
     return 'Invalid URL';
@@ -185,6 +189,10 @@ function getRootDomainFromURL(url, pslList) {
 
 function getHostname(url) {
   try {
+    if (!/^https?:\/\//i.test(url)) {
+      url = 'http://' + url;
+    }
+
     const match = url.match(/^https?:\/\/([^\/?#]+)(?:[\/?#]|$)/i);
     if (!match) return 'Invalid URL';
 
