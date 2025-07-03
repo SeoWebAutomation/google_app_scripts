@@ -6,63 +6,27 @@ function onOpen() {
 }
 
 function extractHostnames() {
-  const ui = SpreadsheetApp.getUi();
+  const { urlCol, resultCol, sheet, ui } = getColumnLetters();
+  if (!urlCol) return;
 
-  const urlColResp = ui.prompt('Введіть ЛІТЕРУ(ENG) колонки з URL (наприклад A):');
-  const resultColResp = ui.prompt('Введіть ЛІТЕРУ(ENG) колонки для результату (наприклад B):');
-
-  const urlColLetter = urlColResp.getResponseText().toUpperCase();
-  const resultColLetter = resultColResp.getResponseText().toUpperCase();
-
-  if (!urlColLetter.match(/^[A-Z]+$/) || !resultColLetter.match(/^[A-Z]+$/)) {
-    ui.alert('Некоректна літера колонки.');
-    return;
-  }
-
-  if (urlColLetter === resultColLetter) {
-    const overwriteResponse = ui.alert(
-      `Ви вказали одну й ту саму літеру для вхідних і вихідних даних: "${urlColLetter}".\n` +
-      'Це призведе до перезапису початкових URL-адрес. Ви впевнені, що хочете продовжити?',
-      ui.ButtonSet.YES_NO
-    );
-    if (overwriteResponse === ui.Button.NO) return;
-  }
-
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-  const urlCol = columnLetterToIndex(urlColLetter);
-  const resultCol = columnLetterToIndex(resultColLetter);
-
-  const colValues = sheet.getRange(2, urlCol, sheet.getMaxRows() - 1).getValues();
-  const nonEmptyValues = colValues.filter(row => row[0] !== '');
-
-  if (nonEmptyValues.length === 0) {
-    ui.alert('⚠️error⚠️ Немає даних для обробки в обраній колонці.');
-    return;
-  }
-
-  const urlValues = colValues.slice(0, nonEmptyValues.length); // тільки непорожні
-
-  for (let i = 0; i < urlValues.length; i++) {
-    const url = urlValues[i][0];
-    if (url) {
-      const hostname = getHostname(url.trim());
-      sheet.getRange(i + 2, resultCol).setValue(hostname);
-    } else {
-      sheet.getRange(i + 2, resultCol).setValue('');
-    }
-  }
-
-  ui.alert('✅ Готово! Hostname витягнено.');
+  processURLs({
+    sheet,
+    urlCol,
+    resultCol,
+    transformFn: getHostname,
+    message: '✅ Готово! Hostname витягнено.'
+  });
 }
 
 function extractRootDomains() {
   const ui = SpreadsheetApp.getUi();
 
-  // Отримуємо дату останнього оновлення
+  // Перевірка на оновлення PSL
   const lastUpdate = PropertiesService.getScriptProperties().getProperty('PSL_LAST_UPDATE');
-  let lastUpdateStr = lastUpdate ? Utilities.formatDate(new Date(lastUpdate), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss') : 'не оновлювалась';
+  const lastUpdateStr = lastUpdate
+    ? Utilities.formatDate(new Date(lastUpdate), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss')
+    : 'не оновлювалась';
 
-  // Питаємо, чи оновити PSL
   const response = ui.alert(
     `📅 Дата останнього оновлення Public Suffix List: ${lastUpdateStr}\n\n` +
     '🔄 Оновити список перед обробкою?\n\n' +
@@ -72,43 +36,9 @@ function extractRootDomains() {
     ui.ButtonSet.YES_NO
   );
 
-  if (response == ui.Button.YES) {
+  if (response === ui.Button.YES) {
     updatePSL();
   }
-
-  const urlColResp = ui.prompt('Введіть ЛІТЕРУ(ENG) колонки з URL (наприклад A):');
-  const resultColResp = ui.prompt('Введіть ЛІТЕРУ(ENG) колонки для результату (наприклад B):');
-
-  const urlColLetter = urlColResp.getResponseText().toUpperCase();
-  const resultColLetter = resultColResp.getResponseText().toUpperCase();
-
-  if (!urlColLetter.match(/^[A-Z]+$/) || !resultColLetter.match(/^[A-Z]+$/)) {
-    ui.alert('Некоректна літера колонки.');
-    return;
-  }
-
-  if (urlColLetter === resultColLetter) {
-    const overwriteResponse = ui.alert(
-      `Ви вказали одну й ту саму літеру для вхідних і вихідних даних: "${urlColLetter}".\n` +
-      'Це призведе до перезапису початкових URL-адрес. Ви впевнені, що хочете продовжити?',
-      ui.ButtonSet.YES_NO
-    );
-    if (overwriteResponse === ui.Button.NO) return;
-  }
-
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-  const urlCol = columnLetterToIndex(urlColLetter);
-  const resultCol = columnLetterToIndex(resultColLetter);
-
-  const colValues = sheet.getRange(2, urlCol, sheet.getMaxRows() - 1).getValues();
-  const nonEmptyValues = colValues.filter(row => row[0] !== '');
-
-  if (nonEmptyValues.length === 0) {
-    ui.alert('⚠️error⚠️ Немає даних для обробки в обраній колонці.');
-    return;
-  }
-
-  const urlValues = colValues.slice(0, nonEmptyValues.length); // тільки непорожні
 
   let pslRaw = PropertiesService.getScriptProperties().getProperty('PSL');
   if (!pslRaw) {
@@ -121,19 +51,73 @@ function extractRootDomains() {
     }
   }
 
+  const { urlCol, resultCol, sheet } = getColumnLetters();
+  if (!urlCol) return;
+
   const pslList = parsePSL(pslRaw);
+
+  processURLs({
+    sheet,
+    urlCol,
+    resultCol,
+    transformFn: (url) => getRootDomainFromURL(url, pslList),
+    message: '✅ Готово! Рут-домен витягнено.'
+  });
+}
+
+// ========================
+// 🔧 Утиліти
+// ========================
+
+function getColumnLetters() {
+  const ui = SpreadsheetApp.getUi();
+
+  const urlColResp = ui.prompt('Введіть ЛІТЕРУ(ENG) колонки з URL (наприклад A):');
+  const resultColResp = ui.prompt('Введіть ЛІТЕРУ(ENG) колонки для результату (наприклад B):');
+
+  const urlColLetter = urlColResp.getResponseText().toUpperCase();
+  const resultColLetter = resultColResp.getResponseText().toUpperCase();
+
+  if (!urlColLetter.match(/^[A-Z]+$/) || !resultColLetter.match(/^[A-Z]+$/)) {
+    ui.alert('Некоректна літера колонки.');
+    return {};
+  }
+
+  if (urlColLetter === resultColLetter) {
+    const overwriteResponse = ui.alert(
+      `Ви вказали одну й ту саму літеру для вхідних і вихідних даних: "${urlColLetter}".\n\n` +
+      'Це призведе до перезапису початкових URL-адрес. Ви впевнені, що хочете продовжити?',
+      ui.ButtonSet.YES_NO
+    );
+    if (overwriteResponse === ui.Button.NO) return {};
+  }
+
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  const urlCol = columnLetterToIndex(urlColLetter);
+  const resultCol = columnLetterToIndex(resultColLetter);
+
+  return { urlCol, resultCol, sheet, ui };
+}
+
+function processURLs({ sheet, urlCol, resultCol, transformFn, message }) {
+  const ui = SpreadsheetApp.getUi();
+  const colValues = sheet.getRange(2, urlCol, sheet.getMaxRows() - 1).getValues();
+  const nonEmptyValues = colValues.filter(row => row[0] !== '');
+
+  if (nonEmptyValues.length === 0) {
+    ui.alert('⚠️error⚠️ Немає даних для обробки в обраній колонці.');
+    return;
+  }
+
+  const urlValues = colValues.slice(0, nonEmptyValues.length);
 
   for (let i = 0; i < urlValues.length; i++) {
     const url = urlValues[i][0];
-    if (url) {
-      const rootDomain = getRootDomainFromURL(url.trim(), pslList);
-      sheet.getRange(i + 2, resultCol).setValue(rootDomain);
-    } else {
-      sheet.getRange(i + 2, resultCol).setValue('');
-    }
+    const result = url ? transformFn(url.trim()) : '';
+    sheet.getRange(i + 2, resultCol).setValue(result);
   }
 
-  ui.alert('✅ Готово! Рут-домен витягнено.');
+  ui.alert(message);
 }
 
 function updatePSL() {
