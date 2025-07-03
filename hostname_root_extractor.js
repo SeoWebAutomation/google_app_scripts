@@ -32,13 +32,15 @@ function extractHostnames() {
   const urlCol = columnLetterToIndex(urlColLetter);
   const resultCol = columnLetterToIndex(resultColLetter);
 
-  const lastRow = sheet.getLastRow();
-  if (lastRow < 2) {
-    ui.alert('Немає даних для обробки.');
+  const colValues = sheet.getRange(2, urlCol, sheet.getMaxRows() - 1).getValues();
+  const nonEmptyValues = colValues.filter(row => row[0] !== '');
+
+  if (nonEmptyValues.length === 0) {
+    ui.alert('⚠️error⚠️ Немає даних для обробки в обраній колонці.');
     return;
   }
 
-  const urlValues = sheet.getRange(2, urlCol, lastRow - 1).getValues();
+  const urlValues = colValues.slice(0, nonEmptyValues.length); // тільки непорожні
 
   for (let i = 0; i < urlValues.length; i++) {
     const url = urlValues[i][0];
@@ -50,7 +52,7 @@ function extractHostnames() {
     }
   }
 
-  ui.alert('Готово! Hostname витягнено.');
+  ui.alert('✅ Готово! Hostname витягнено.');
 }
 
 function extractRootDomains() {
@@ -62,8 +64,11 @@ function extractRootDomains() {
 
   // Питаємо, чи оновити PSL
   const response = ui.alert(
-    `Дата останнього оновлення Public Suffix List: ${lastUpdateStr}\n` +
-    'Оновити список перед обробкою?',
+    `📅 Дата останнього оновлення Public Suffix List: ${lastUpdateStr}\n\n` +
+    '🔄 Оновити список перед обробкою?\n\n' +
+    '----------------------------------------------------------\n' +
+    '⚠️ РЕКОМЕНДУЄМО ОНОВЛЮВАТИ PSL КОЖНІ 3 МІСЯЦІ!\n' +
+    '----------------------------------------------------------',
     ui.ButtonSet.YES_NO
   );
 
@@ -95,13 +100,15 @@ function extractRootDomains() {
   const urlCol = columnLetterToIndex(urlColLetter);
   const resultCol = columnLetterToIndex(resultColLetter);
 
-  const lastRow = sheet.getLastRow();
-  if (lastRow < 2) {
-    ui.alert('Немає даних для обробки.');
+  const colValues = sheet.getRange(2, urlCol, sheet.getMaxRows() - 1).getValues();
+  const nonEmptyValues = colValues.filter(row => row[0] !== '');
+
+  if (nonEmptyValues.length === 0) {
+    ui.alert('⚠️error⚠️ Немає даних для обробки в обраній колонці.');
     return;
   }
 
-  const urlValues = sheet.getRange(2, urlCol, lastRow - 1).getValues();
+  const urlValues = colValues.slice(0, nonEmptyValues.length); // тільки непорожні
 
   let pslRaw = PropertiesService.getScriptProperties().getProperty('PSL');
   if (!pslRaw) {
@@ -126,7 +133,7 @@ function extractRootDomains() {
     }
   }
 
-  ui.alert('Готово! Рут-домен витягнено.');
+  ui.alert('✅ Готово! Рут-домен витягнено.');
 }
 
 function updatePSL() {
