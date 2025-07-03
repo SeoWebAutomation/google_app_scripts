@@ -19,6 +19,15 @@ function extractHostnames() {
     return;
   }
 
+  if (urlColLetter === resultColLetter) {
+    const overwriteResponse = ui.alert(
+      `Ви вказали одну й ту саму літеру для вхідних і вихідних даних: "${urlColLetter}".\n` +
+      'Це призведе до перезапису початкових URL-адрес. Ви впевнені, що хочете продовжити?',
+      ui.ButtonSet.YES_NO
+    );
+    if (overwriteResponse === ui.Button.NO) return;
+  }
+
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
   const urlCol = columnLetterToIndex(urlColLetter);
   const resultCol = columnLetterToIndex(resultColLetter);
@@ -71,6 +80,15 @@ function extractRootDomains() {
   if (!urlColLetter.match(/^[A-Z]+$/) || !resultColLetter.match(/^[A-Z]+$/)) {
     ui.alert('Некоректна літера колонки.');
     return;
+  }
+
+  if (urlColLetter === resultColLetter) {
+    const overwriteResponse = ui.alert(
+      `Ви вказали одну й ту саму літеру для вхідних і вихідних даних: "${urlColLetter}".\n` +
+      'Це призведе до перезапису початкових URL-адрес. Ви впевнені, що хочете продовжити?',
+      ui.ButtonSet.YES_NO
+    );
+    if (overwriteResponse === ui.Button.NO) return;
   }
 
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
