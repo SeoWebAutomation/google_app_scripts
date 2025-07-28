@@ -7,7 +7,7 @@ function importSpecificColumns() {
       id: '10lPwwwLWslnz8QE7ZKtGZNUIvktLamExRf6idPvrU6E', // ID таблиці з урл https://docs.google.com/spreadsheets/d/10lPwwwLWslnz8QE7ZKtGZNUIvktLamExRf6idPvrU6E
       sheetName: 'Аркуш1', // Назва аркуша
       columnLetter: 'B',    // Яку колонку витягнути
-      title: 'selected donors'
+      title: 'selected donors' // Назва з якою буде пов'язуватись запис
     },
     {
       id: '1yQnpVzfDqUIKt3sJd7GYj5jUYhAki552oyIEYHi9lVI',
@@ -48,9 +48,9 @@ function importSpecificColumns() {
       targetRow += columnData.length;
     }
   });
-  // Записати дату й час оновлення в D1
+  // Записати дату й час оновлення в С1
   const now = new Date();
-  targetSheet.getRange('D1').setValue(`Оновлено: ${now.toLocaleString()}`);
+  targetSheet.getRange('С1').setValue(`Оновлено: ${now.toLocaleString()}`);
 }
 
 function letterToColumn(letter) {
