@@ -28,7 +28,10 @@ function importSpecificColumns() {
   const targetSheet = targetSpreadsheet.getSheetByName('Обрані колонки') || targetSpreadsheet.insertSheet('Обрані колонки'); // Створити або відкрити вказаний аркуш
   targetSheet.clearContents(); // Очистити аркуш
 
-  let targetRow = 1;
+  targetSheet.getRange('A1').setValue('row domain');
+  targetSheet.getRange('B1').setValue('list');
+
+  let targetRow = 2;
 
   sources.forEach(source => {
     const sourceSpreadsheet = SpreadsheetApp.openById(source.id);
