@@ -48,9 +48,9 @@ function importSpecificColumns() {
       targetRow += columnData.length;
     }
   });
-  // Записати дату й час оновлення в С1
+  // Записати дату й час оновлення в C1
   const now = new Date();
-  targetSheet.getRange('С1').setValue(`Оновлено: ${now.toLocaleString()}`);
+  targetSheet.getRange('C1').setValue(`Оновлено: ${now.toLocaleString()}`);
 }
 
 function letterToColumn(letter) {
