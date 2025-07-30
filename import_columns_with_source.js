@@ -42,7 +42,8 @@ function importSpecificColumns() {
     const lastRow = sourceSheet.getLastRow();
     // Якщо є хоча б 2 рядки (тобто є що копіювати), копіюємо з 2 рядка (пропускаєм назву колонки)
     if (lastRow > 1) {
-      const columnData = sourceSheet.getRange(2, colNumber, lastRow - 1).getValues(); // Починаємо з 2 рядка
+      let columnData = sourceSheet.getRange(2, colNumber, lastRow - 1).getValues(); // Починаємо з 2 рядка
+      columnData = columnData.map(row => [String(row[0]).toLowerCase()]);
 
       const titlesArray = columnData.map(() => [source.title]);
 
