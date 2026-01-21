@@ -4,13 +4,24 @@ function onEdit(e) {
     const editedRange = e.range;
 
     // === Налаштування ===
-    const targetSheet = "Аркуш1"; // назва аркуша
-    const watchColumnName = "Status";     // назва колонки, яку відстежуємо
-    const dateColumnName = "Date"; // назва колонки, куди ставимо дату
+    const SHEETS_CONFIG = {
+      "Аркуш1": { // назва аркуша
+        watchColumnName: "Status", // назва колонки, яку відстежуємо
+        dateColumnName: "Date_Last_Checked" // назва колонки, куди ставимо дату
+      },
+      // "Аркуш2": {
+      //   watchColumnName: "Status",
+      //   dateColumnName: "Date_Last_Checked"
+      // }
+    };
+
     const headerRowIndex = 1; // Номер рядку в якому заголовки
+    // === Налаштування кінець ===
 
-    if (sheet.getName() !== targetSheet) return;
+    const sheetName = sheet.getName();
+    if (!SHEETS_CONFIG[sheetName]) return;
 
+    const { watchColumnName, dateColumnName } = SHEETS_CONFIG[sheetName];
 
     const headers = sheet.getRange(headerRowIndex, 1, 1, sheet.getLastColumn()).getValues()[0]
       .map(h => h ? String(h).trim() : "");
